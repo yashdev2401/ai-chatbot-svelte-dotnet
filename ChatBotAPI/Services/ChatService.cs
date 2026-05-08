@@ -10,62 +10,118 @@ namespace ChatBotAPI.Services
 	{
 		private readonly AppDbContext _db;
 		private readonly OllamaService _ollama;
+		private readonly EmbeddingService _embeddingService;
+		private readonly VectorDbService _vectorDbService;
 
-		public ChatService(AppDbContext db, OllamaService ollama)
+		public ChatService(
+			AppDbContext db,
+			OllamaService ollama,
+			EmbeddingService embeddingService,
+			VectorDbService vectorDbService)
 		{
 			_db = db;
 			_ollama = ollama;
+			_embeddingService = embeddingService;
+			_vectorDbService = vectorDbService;
 		}
-
 		public async Task<string> Send(string userId, string message)
 		{
-			// Save user message
-			var userMessage = new ChatMessage
-			{
-				UserId = userId,
-				Role = "user",
-				Content = message,
-				CreatedAt = DateTime.UtcNow
-			};
+			try {
+				Console.WriteLine("Saving user message...");
 
-			_db.Messages.Add(userMessage);
-			await _db.SaveChangesAsync();
+				// Save user message
+				var userMessage = new ChatMessage
+				{
+					UserId = userId,
+					Role = "user",
+					Content = message,
+					CreatedAt = DateTime.UtcNow
+				};
 
-			// Get last 10 messages
-			var history = await _db.Messages.Where(x => x.UserId == userId).OrderByDescending(x => x.CreatedAt).Take(10).OrderBy(x => x.CreatedAt).ToListAsync();
+				_db.Messages.Add(userMessage);
+				await _db.SaveChangesAsync();
 
-			// Build prompt
-			var promptBuilder = new StringBuilder();
+				Console.WriteLine("Generating embedding...");
 
-			promptBuilder.AppendLine(
-				"You are a helpful AI assistant. Answer clearly and properly formatted."
-			);
+				// Generate embedding
+				var embedding = await _embeddingService
+					.GenerateEmbedding(message);
 
-			foreach (var msg in history)
-			{
-				promptBuilder.AppendLine($"{msg.Role}: {msg.Content}");
+				Console.WriteLine("Searching vector DB...");
+
+				// Search semantic memory
+				var cachedAnswer = await _vectorDbService
+					.SearchMemory(embedding);
+
+				// Cache hit
+				if (!string.IsNullOrEmpty(cachedAnswer))
+				{
+					Console.WriteLine("CACHE HIT - Returning from Qdrant");
+					return cachedAnswer;
+				}
+
+				Console.WriteLine("No cache found.");
+
+				// Get last messages
+				var history = await _db.Messages
+					.Where(x => x.UserId == userId)
+					.OrderByDescending(x => x.CreatedAt)
+					.Take(10)
+					.OrderBy(x => x.CreatedAt)
+					.ToListAsync();
+
+				Console.WriteLine("Building prompt...");
+
+				// Build prompt
+				var promptBuilder = new StringBuilder();
+
+				promptBuilder.AppendLine(
+					"You are a helpful AI assistant. Answer clearly and properly formatted."
+				);
+
+				foreach (var msg in history)
+				{
+					promptBuilder.AppendLine($"{msg.Role}: {msg.Content}");
+				}
+
+				promptBuilder.AppendLine("assistant:");
+
+				var finalPrompt = promptBuilder.ToString();
+
+				Console.WriteLine("Calling Ollama...");
+
+				// AI response
+				var aiReply = await _ollama.Generate(finalPrompt);
+
+				Console.WriteLine("Saving vector memory...");
+
+				// Save semantic memory
+				await _vectorDbService.SaveMemory(
+					message,
+					aiReply,
+					embedding
+				);
+				Console.WriteLine("Saving assistant message...");
+
+				// Save assistant response
+				var assistantMessage = new ChatMessage
+				{
+					UserId = userId,
+					Role = "assistant",
+					Content = aiReply,
+					CreatedAt = DateTime.UtcNow
+				};
+
+				_db.Messages.Add(assistantMessage);
+				await _db.SaveChangesAsync();
+
+				Console.WriteLine("Response completed.");
+				return aiReply;
 			}
-
-			promptBuilder.AppendLine("assistant:");
-
-			var finalPrompt = promptBuilder.ToString();
-
-			// AI Response
-			var aiReply = await _ollama.Generate(finalPrompt);
-
-			// Save assistant response
-			var assistantMessage = new ChatMessage
-			{
-				UserId = userId,
-				Role = "assistant",
-				Content = aiReply,
-				CreatedAt = DateTime.UtcNow
-			};
-
-			_db.Messages.Add(assistantMessage);
-			await _db.SaveChangesAsync();
-
-			return aiReply;
+			catch (Exception e) {
+				Console.WriteLine("Some thing went wrong" , e);
+				throw;
+			}
 		}
 	}
 }
