@@ -32,7 +32,8 @@
     <button
     on:click={send}
     disabled={loading}>
-    {loading ? 'Thinking...' : 'Send'}
+    <!-- {loading ? 'Thinking...' : 'Send'} -->
+     Send
     </button>
 
 </div>
