@@ -21,5 +21,12 @@ namespace ChatBotAPI.Controllers
 			var result = await _chatService.Send( conversationId , message);
 			return Ok(result);
 		}
+
+		[HttpGet]
+		public async Task<IActionResult> GetMessages(Guid conversationId)
+		{
+			var messages = await _chatService.GetMessages(conversationId);
+			return Ok(messages);
+		}
 	}
 }

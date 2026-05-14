@@ -1,16 +1,33 @@
 <script lang="ts">
-
     import MessageList from './MessageList.svelte';
     import ChatInput from './ChatInput.svelte';
-
-    import { sendMessage } from '../Services/api';
-
+    import { sendMessage, getMessages } from '../Services/api';
     import type { ChatMessage } from '../Types/chat';
+    import { onMount } from 'svelte';
 
     let messages: ChatMessage[] = [];
 
     let loading = false;
-    const conversationId = crypto.randomUUID();
+
+    let conversationId =
+    localStorage.getItem("conversationId");
+
+    if (!conversationId) {
+        conversationId = crypto.randomUUID().toString();
+        localStorage.setItem(
+            "conversationId",
+            conversationId
+        );
+    }
+
+    onMount(async () => {
+        const oldMessages =
+            await getMessages(conversationId);
+        messages = oldMessages.map((x: any) => ({
+            role: x.role,
+            text: x.content
+        }));
+    });
 
     async function handleSend(event: CustomEvent<string>) {
 

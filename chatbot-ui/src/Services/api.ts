@@ -14,3 +14,12 @@ export async function sendMessage(conversationId: string, message: string): Prom
 
     return await response.text();
 }
+
+export async function getMessages(conversationId: string) {
+
+    const response = await fetch(
+        `https://localhost:7180/api/chat?conversationId=${conversationId}`
+    );
+
+    return await response.json();
+}

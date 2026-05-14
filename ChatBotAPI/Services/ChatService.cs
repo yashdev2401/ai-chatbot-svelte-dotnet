@@ -124,5 +124,12 @@ namespace ChatBotAPI.Services
 				throw;
 			}
 		}
+		public async Task<List<ChatMessage>> GetMessages(Guid conversationId)
+		{
+			return await _db.Messages
+				.Where(x => x.ConversationId == conversationId)
+				.OrderBy(x => x.CreatedAt)
+				.ToListAsync();
+		}
 	}
 }
