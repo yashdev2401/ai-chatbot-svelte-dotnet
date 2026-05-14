@@ -32,7 +32,7 @@ namespace ChatBotAPI.Services
 			}
 		}
 
-		public async Task SaveMemory( string question,string answer,float[] embedding)
+		public async Task SaveMemory(Guid conversationId, string question, string answer, float[] embedding)
 		{
 			var point = new PointStruct
 			{
@@ -43,6 +43,7 @@ namespace ChatBotAPI.Services
 				Vectors = embedding,
 				Payload =
 				{
+					["conversationId"] = conversationId.ToString(),
 					["question"] = question,
 					["answer"] = answer
 				}
@@ -54,18 +55,37 @@ namespace ChatBotAPI.Services
 			);
 		}
 
-		public async Task<string?> SearchMemory(float[] embedding)
+		public async Task<string?> SearchMemory(Guid conversationId, float[] embedding)
 		{
 			var searchResult = await _client.SearchAsync(
 				collectionName: CollectionName,
 				vector: embedding,
-				limit: 1
+				limit: 1,
+				filter: new Filter
+				{
+					Must =
+					{
+						new Condition
+						{
+							Field = new FieldCondition
+							{
+									Key = "conversationId",
+									Match = new Match
+									{
+											Keyword = conversationId.ToString()
+										}
+							}
+						}
+					}
+				}
 			);
 			var match = searchResult.FirstOrDefault();
 
-			if (match != null && match.Score > 0.7) { 
+			if (match != null && match.Score > 0.7)
+			{
 				return match.Payload["answer"].StringValue;
 			}
+
 			return null;
 		}
 	}

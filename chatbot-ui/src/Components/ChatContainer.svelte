@@ -10,6 +10,7 @@
     let messages: ChatMessage[] = [];
 
     let loading = false;
+    const conversationId = crypto.randomUUID();
 
     async function handleSend(event: CustomEvent<string>) {
 
@@ -31,7 +32,7 @@
 
         try {
 
-            const reply = await sendMessage(text);
+            const reply = await sendMessage(conversationId, text);
 
             messages = [
                 ...messages,

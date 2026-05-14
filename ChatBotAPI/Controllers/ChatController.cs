@@ -16,9 +16,9 @@ namespace ChatBotAPI.Controllers
 		}
 
 		[HttpPost]
-		public async Task<IActionResult> Send([FromBody] string message)
+		public async Task<IActionResult> Send(Guid conversationId, [FromBody] string message)
 		{
-			var result = await _chatService.Send("user1", message);
+			var result = await _chatService.Send( conversationId , message);
 			return Ok(result);
 		}
 	}

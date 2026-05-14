@@ -24,7 +24,7 @@ namespace ChatBotAPI.Services
 			_embeddingService = embeddingService;
 			_vectorDbService = vectorDbService;
 		}
-		public async Task<string> Send(string userId, string message)
+		public async Task<string> Send( Guid conversationId, string message)
 		{
 			try {
 				Console.WriteLine("Saving user message...");
@@ -32,7 +32,7 @@ namespace ChatBotAPI.Services
 				// Save user message
 				var userMessage = new ChatMessage
 				{
-					UserId = userId,
+					ConversationId = conversationId,
 					Role = "user",
 					Content = message,
 					CreatedAt = DateTime.UtcNow
@@ -51,7 +51,7 @@ namespace ChatBotAPI.Services
 
 				// Search semantic memory
 				var cachedAnswer = await _vectorDbService
-					.SearchMemory(embedding);
+					.SearchMemory(conversationId,embedding);
 
 				// Cache hit
 				if (!string.IsNullOrEmpty(cachedAnswer))
@@ -64,7 +64,7 @@ namespace ChatBotAPI.Services
 
 				// Get last messages
 				var history = await _db.Messages
-					.Where(x => x.UserId == userId)
+					.Where(x =>x.ConversationId == conversationId)
 					.OrderByDescending(x => x.CreatedAt)
 					.Take(10)
 					.OrderBy(x => x.CreatedAt)
@@ -97,6 +97,7 @@ namespace ChatBotAPI.Services
 
 				// Save semantic memory
 				await _vectorDbService.SaveMemory(
+					conversationId,
 					message,
 					aiReply,
 					embedding
@@ -106,7 +107,7 @@ namespace ChatBotAPI.Services
 				// Save assistant response
 				var assistantMessage = new ChatMessage
 				{
-					UserId = userId,
+					ConversationId = conversationId,
 					Role = "assistant",
 					Content = aiReply,
 					CreatedAt = DateTime.UtcNow

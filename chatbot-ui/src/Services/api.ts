@@ -1,6 +1,6 @@
-export async function sendMessage(message: string): Promise<string> {
+export async function sendMessage(conversationId: string, message: string): Promise<string> {
 
-    const response = await fetch('https://localhost:7180/api/chat?userId=user', {
+    const response = await fetch(`https://localhost:7180/api/chat?userId=user&conversationId=${conversationId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
