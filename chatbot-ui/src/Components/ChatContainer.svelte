@@ -10,11 +10,11 @@
     let loading = false;
 
     let conversationId =
-    localStorage.getItem("conversationId");
+    sessionStorage.getItem("conversationId");
 
     if (!conversationId) {
         conversationId = crypto.randomUUID().toString();
-        localStorage.setItem(
+        sessionStorage.setItem(
             "conversationId",
             conversationId
         );
@@ -28,6 +28,19 @@
             text: x.content
         }));
     });
+
+    function startNewChat() {
+
+    conversationId =
+        crypto.randomUUID().toString();
+
+    sessionStorage.setItem(
+        "conversationId",
+        conversationId
+    );
+
+    messages = [];
+}
 
     async function handleSend(event: CustomEvent<string>) {
 
@@ -48,8 +61,8 @@
         loading = true;
 
         try {
-
             const reply = await sendMessage(conversationId, text);
+            speakMessage(reply);
 
             messages = [
                 ...messages,
@@ -60,7 +73,6 @@
             ];
         }
         catch {
-
             messages = [
                 ...messages,
                 {
@@ -69,36 +81,55 @@
                 }
             ];
         }
-
         loading = false;
     }
+
+   function speakMessage(text: string) {
+
+    if (window.speechSynthesis.speaking) {
+        return;
+    }
+
+    const speech = new SpeechSynthesisUtterance(text);
+
+    speech.lang = 'en-US';
+    speech.rate = 1;
+    speech.pitch = 1;
+
+    speech.onstart = () => {
+        console.log('Speech started');
+    };
+
+    speech.onend = () => {
+        console.log('Speech ended');
+    };
+
+    speech.onerror = (e) => {
+        console.error('Speech error', e);
+    };
+
+    window.speechSynthesis.speak(speech);
+}
 </script>
 
-<div class="chat-layout">
+    <div class="chat-layout">
+        <MessageList
+            {messages}
+            {loading}
+        />
+        <ChatInput
+            on:send={handleSend}
+        />
+    </div>
 
-    <MessageList
-        {messages}
-        {loading}
-    />
-
-   <ChatInput
-    on:send={handleSend}
-    {loading}
-    />
-</div>
 
 <style>
 
     .chat-layout {
-
         flex: 1;
-
         display: flex;
-
         flex-direction: column;
-
         background: #0f172a;
-
         height: 100vh;
     }
 

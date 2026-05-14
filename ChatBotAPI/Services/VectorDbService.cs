@@ -81,7 +81,7 @@ namespace ChatBotAPI.Services
 			);
 			var match = searchResult.FirstOrDefault();
 
-			if (match != null && match.Score > 0.7)
+			if (match != null && match.Score > 0.90)
 			{
 				return match.Payload["answer"].StringValue;
 			}

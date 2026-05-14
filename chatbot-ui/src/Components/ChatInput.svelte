@@ -1,39 +1,75 @@
 <script lang="ts">
-
     import { createEventDispatcher } from 'svelte';
     export let loading = false;
-
-    let text = '';
-
+    let message = '';
     const dispatch = createEventDispatcher();
 
+    function sendMessage() {
 
-    function send() {
-
-        if (!text.trim()) {
+        if (!message.trim()) {
             return;
         }
+        dispatch('send', message);
+        message = '';
+    }
 
-        dispatch('send', text);
+    function handleKeyDown(event: KeyboardEvent) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            sendMessage();
+        }
+    }
 
-        text = '';
+    function startVoiceRecognition() {
+        const SpeechRecognition =
+            window.SpeechRecognition ||
+            window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert('Speech recognition not supported');
+            return;
+        }
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        recognition.start();
+
+        recognition.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            message = transcript;
+            sendMessage();
+        };
+
+        recognition.onerror = (event: any) => {
+            console.error('Speech error', event);
+        };
     }
 </script>
 
 <div class="input-container">
 
-    <input
-        bind:value={text}
+    <textarea
+        bind:value={message}
         placeholder="Type your message..."
         disabled={loading}
-        on:keydown={(e) => e.key === 'Enter' && send()}
+        on:keydown={handleKeyDown}
+        rows="1"
     />
 
     <button
-    on:click={send}
-    disabled={loading}>
-    <!-- {loading ? 'Thinking...' : 'Send'} -->
-     Send
+        class="mic-btn"
+        on:click={startVoiceRecognition}
+        disabled={loading}
+    >
+        🎤
+    </button>
+
+    <button
+        class="send-btn"
+        on:click={sendMessage}
+        disabled={loading}
+    >
+        {loading ? '...' : 'Send'}
     </button>
 
 </div>
@@ -41,40 +77,45 @@
 <style>
     .input-container {
         display: flex;
-        gap: 12px;
-        padding: 20px;
-        border-top: 1px solid #374151;
-        background: #111827;
-        position: sticky;
-        bottom: 0;
+        align-items: flex-end;
+        gap: 10px;
+        padding: 12px;
+        width: 100%;
     }
 
-    input {
+    textarea {
         flex: 1;
-        padding: 16px;
-        border-radius: 14px;
-        border: 1px solid #374151;
-        background: #1f2937;
+        min-height: 52px;
+        max-height: 160px;
+        resize: none;
+        border-radius: 12px;
+        border: 1px solid #243047;
+        background: #0b1220;
         color: white;
-        font-size: 15px;
+        padding: 14px;
+        font-size: 14px;
         outline: none;
+        overflow-y: auto;
     }
 
-    input:focus {
-        border-color: #2563eb;
-    }
-
-    button {
-        padding: 14px 24px;
+    .mic-btn,
+    .send-btn {
+        height: 52px;
         border: none;
-        border-radius: 14px;
-        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        border-radius: 12px;
+        background: #2563eb;
         color: white;
-        font-weight: 600;
         cursor: pointer;
+        flex-shrink: 0;
     }
 
-    button:hover {
-        opacity: 0.9;
+    .mic-btn {
+        width: 52px;
+        font-size: 18px;
+    }
+
+    .send-btn {
+        padding: 0 20px;
+        font-weight: 600;
     }
 </style>
