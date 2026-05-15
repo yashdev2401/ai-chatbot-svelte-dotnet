@@ -87,30 +87,29 @@
 
 <style>
 
-    .messages-wrapper {
+.messages-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
 
-        position: relative;
+.input-wrapper {
+    flex-shrink: 0;
+    border-top: 1px solid #1e293b;
+    background: #020617;
+}
 
-        flex: 1;
-
-        overflow: hidden;
-    }
-
-    .messages {
-
-        height: 100%;
-
-        overflow-y: auto;
-
-        padding: 30px;
-
-        display: flex;
-
-        flex-direction: column;
-
-        scroll-behavior: smooth;
-    }
-
+  .messages {
+    flex: 1;
+    width: 100%;
+    overflow-y: auto;
+    padding: 24px;
+    padding-bottom: 140px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-sizing: border-box;
+}
     .scroll-bottom {
 
         position: absolute;

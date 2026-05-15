@@ -1,49 +1,62 @@
 <script lang="ts">
+    import { onMount, tick } from 'svelte';
     import MessageList from './MessageList.svelte';
     import ChatInput from './ChatInput.svelte';
-    import { sendMessage, getMessages } from '../Services/api';
-    import type { ChatMessage } from '../Types/chat';
-    import { onMount } from 'svelte';
 
-    let messages: ChatMessage[] = [];
+    import {
+        sendMessage,
+        getMessages
+    } from '../Services/api';
+
+    let messages: any[] = [];
 
     let loading = false;
 
-    let conversationId =
-    sessionStorage.getItem("conversationId");
+    let messagesContainer: HTMLDivElement;
+
+    let conversationId = sessionStorage.getItem('conversationId');
 
     if (!conversationId) {
-        conversationId = crypto.randomUUID().toString();
+        conversationId =crypto.randomUUID();
+
         sessionStorage.setItem(
-            "conversationId",
+            'conversationId',
             conversationId
         );
     }
 
     onMount(async () => {
         const oldMessages =
-            await getMessages(conversationId);
+            await getMessages(conversationId!);
+
         messages = oldMessages.map((x: any) => ({
             role: x.role,
             text: x.content
         }));
+        await tick();
+        scrollToBottom();
     });
 
-    function startNewChat() {
+    function scrollToBottom() {
+        if (messagesContainer) {
+            messagesContainer.scrollTop =
+                messagesContainer.scrollHeight;
+        }
+    }
 
-    conversationId =
-        crypto.randomUUID().toString();
+    function speakMessage(text: string) {
+        window.speechSynthesis.cancel();
 
-    sessionStorage.setItem(
-        "conversationId",
-        conversationId
-    );
+        const speech =
+            new SpeechSynthesisUtterance(text);
 
-    messages = [];
-}
+        speech.lang = 'en-US';
+        window.speechSynthesis.speak(speech);
+    }
 
-    async function handleSend(event: CustomEvent<string>) {
-
+    async function handleSend(
+        event: CustomEvent<string>
+    ) {
         const text = event.detail;
 
         if (!text.trim() || loading) {
@@ -58,11 +71,16 @@
             }
         ];
 
+        await tick();
+        scrollToBottom();
         loading = true;
 
         try {
-            const reply = await sendMessage(conversationId, text);
-            speakMessage(reply);
+            const reply =
+                await sendMessage(
+                    conversationId!,
+                    text
+                );
 
             messages = [
                 ...messages,
@@ -71,6 +89,9 @@
                     text: reply
                 }
             ];
+            await tick();
+            scrollToBottom();
+            speakMessage(reply);
         }
         catch {
             messages = [
@@ -81,56 +102,48 @@
                 }
             ];
         }
+
         loading = false;
     }
-
-   function speakMessage(text: string) {
-
-    if (window.speechSynthesis.speaking) {
-        return;
-    }
-
-    const speech = new SpeechSynthesisUtterance(text);
-
-    speech.lang = 'en-US';
-    speech.rate = 1;
-    speech.pitch = 1;
-
-    speech.onstart = () => {
-        console.log('Speech started');
-    };
-
-    speech.onend = () => {
-        console.log('Speech ended');
-    };
-
-    speech.onerror = (e) => {
-        console.error('Speech error', e);
-    };
-
-    window.speechSynthesis.speak(speech);
-}
 </script>
 
-    <div class="chat-layout">
+<div class="chat-container">
+
+    <div
+        bind:this={messagesContainer}
+        class="messages-wrapper"
+    >
         <MessageList
             {messages}
             {loading}
         />
+    </div>
+    <div class="input-wrapper">
         <ChatInput
             on:send={handleSend}
         />
     </div>
-
+</div>
 
 <style>
-
-    .chat-layout {
+    .chat-container {
         flex: 1;
         display: flex;
         flex-direction: column;
-        background: #0f172a;
         height: 100vh;
+        overflow: hidden;
+        background: #020617;
+    }
+    .messages-wrapper {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px;
+        min-height: 0;
     }
 
+    .input-wrapper {
+        padding: 16px 24px;
+        border-top: 1px solid #1e293b;
+        background: #020617;
+    }
 </style>

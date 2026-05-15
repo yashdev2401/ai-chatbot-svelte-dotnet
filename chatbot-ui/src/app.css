@@ -5,19 +5,43 @@ body,
     padding: 0;
     height: 100%;
     overflow: hidden;
-    font-family: Inter, Arial, sans-serif;
+    font-family: Arial, sans-serif;
     background: #020617;
 }
 
-* {
+.app {
+    display: flex;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+}
+.sidebar {
+    width: 240px;
+    background: #081028;
+    border-right: 1px solid #1e293b;
+    padding: 16px;
     box-sizing: border-box;
 }
 
-::-webkit-scrollbar {
-    width: 8px;
+.new-chat-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+}
+.new-chat-btn:hover {
+    background: #1d4ed8;
 }
 
-::-webkit-scrollbar-thumb {
-    background: #374151;
-    border-radius: 10px;
+.chat-layout {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }

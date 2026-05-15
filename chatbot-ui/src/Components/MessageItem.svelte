@@ -2,7 +2,6 @@
   import { marked } from "marked";
   import { onMount } from "svelte";
   import type { ChatMessage } from "../Types/chat";
-  import { Check, Copy } from 'lucide-svelte';
 
   export let message: ChatMessage;
 
