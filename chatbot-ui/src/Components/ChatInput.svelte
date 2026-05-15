@@ -1,10 +1,11 @@
 <script lang="ts">
     import { createEventDispatcher } from 'svelte';
+    export let loading = false;
     let message = '';
     const dispatch = createEventDispatcher();
 
     function sendMessage() {
-        if (!message.trim()) {
+        if (!message.trim() || loading) {
             return;
         }
         dispatch('send', message);
@@ -21,30 +22,29 @@
     }
 
     function startVoiceRecognition() {
+        if (loading) {
+            return;
+        }
         const SpeechRecognition =
             (window as any)
                 .SpeechRecognition ||
             (window as any)
                 .webkitSpeechRecognition;
-
         if (!SpeechRecognition) {
             alert(
                 'Speech recognition not supported'
             );
             return;
         }
-
         const recognition =
             new SpeechRecognition();
         recognition.lang = 'en-US';
         recognition.start();
-
         recognition.onresult =
             (event: any) => {
                 const transcript =
                     event.results[0][0]
                         .transcript;
-
                 message = transcript;
                 sendMessage();
             };
@@ -52,15 +52,16 @@
 </script>
 
 <div class="input-container">
-
     <textarea
         bind:value={message}
         placeholder="Type your message..."
+        disabled={loading}
         on:keydown={handleKeyDown}
     />
 
     <button
         class="mic-btn"
+        disabled={loading}
         on:click={startVoiceRecognition}
     >
         🎤
@@ -68,6 +69,7 @@
 
     <button
         class="send-btn"
+        disabled={loading}
         on:click={sendMessage}
     >
         Send
@@ -96,17 +98,21 @@
         font-size: 14px;
         box-sizing: border-box;
     }
-
-    .mic-btn,
-    .send-btn {
+    .mic-btn, .send-btn {
         height: 52px;
         padding: 0 18px;
-
         border: none;
         border-radius: 12px;
         background: #2563eb;
         color: white;
         cursor: pointer;
         flex-shrink: 0;
+    }
+
+    .mic-btn:disabled,
+    .send-btn:disabled,
+    textarea:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 </style>
